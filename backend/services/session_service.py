@@ -163,4 +163,26 @@ def reset_votes(code: str):
     }
 
 
+def delete_session_service(code: str, name: str):
+    session = sessions.get(code)
+
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail="Sessão não encontrada"
+        )
+
+    if session["admin"] != name:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o administrador pode excluir a sessão"
+        )
+
+    del sessions[code]
+
+    return {
+        "message": "Sessão excluída"
+    }
+
+
 print("PROCESS ID:", os.getpid())

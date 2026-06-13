@@ -4,7 +4,6 @@
     class="overlay"
   >
     <div class="modal">
-
       <div class="text-container">
         <h1>
           Para entrar, informe seu nome
@@ -17,13 +16,11 @@
         placeholder="Nome"
         @keyup.enter="confirm"
       >
-
       <div class="start-button">
         <PrimaryButton @click="confirm">
           Iniciar
         </PrimaryButton>
       </div>
-
     </div>
   </div>
 </template>

@@ -8,6 +8,7 @@ from services.session_service import (
     save_vote,
     reveal_votes,
     reset_votes,
+    delete_session_service,
     get_session_state,
     leave_session_service
 )
@@ -50,6 +51,61 @@ def leave_session(data: JoinSessionRequest):
     return {
         "message": "Saiu da sessão"
     }
+
+
+@router.post("/session/reveal")
+async def reveal_session(data: JoinSessionRequest):
+    session = sessions.get(data.code)
+
+    if not session:
+        return {"error": "Sessão não encontrada"}
+
+    if session["admin"] != data.name:
+        return {"error": "Apenas o administrador pode revelar os votos"}
+
+    reveal_votes(data.code)
+
+    await manager.broadcast(
+        data.code,
+        json.dumps({
+            "type": "state",
+            "data": get_session_state(data.code)
+        })
+    )
+
+    return {"message": "Votos revelados"}
+
+
+@router.post("/session/reset")
+async def reset_session(data: JoinSessionRequest):
+    session = sessions.get(data.code)
+
+    if not session:
+        return {"error": "Sessão não encontrada"}
+
+    if session["admin"] != data.name:
+        return {"error": "Apenas o administrador pode reiniciar a votação"}
+
+    reset_votes(data.code)
+
+    await manager.broadcast(
+        data.code,
+        json.dumps({
+            "type": "state",
+            "data": get_session_state(data.code)
+        })
+    )
+
+    return {"message": "Votação reiniciada"}
+
+
+@router.post("/session/delete")
+async def delete_session(data: JoinSessionRequest):
+    result = delete_session_service(data.code, data.name)
+
+    await manager.close_session(data.code)
+
+    return result
 
 # =========================
 # WebSocket
