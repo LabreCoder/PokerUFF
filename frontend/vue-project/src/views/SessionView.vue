@@ -89,9 +89,12 @@
         </div>
       </div>
 
-      <div v-if="isAdmin" class="sidebar">
-        Sidebar ADM aq depois
-      </div>
+      <SidebarAdmin
+        v-if="isAdmin"
+        @reveal-votes="revealVotes"
+        @reset-votes="resetVotes"
+        @delete-session="deleteSession"
+      />
     </div>
   </div>
 </template>
@@ -102,6 +105,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Divider from '@/components/Divider.vue'
 import SessionCodeModal from '@/components/SessionCodeModal.vue'
 import UserNameModal from '@/components/UserNameModal.vue'
+import SidebarAdmin from '@/components/SidebarAdmin.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -155,27 +159,40 @@ function connect() {
       isAdmin.value = username.value === msg.data.admin
     }
   }
+
+  ws.value.onclose = () => {
+    if (router.currentRoute.value.path !== '/') {
+      router.push('/')
+    }
+  }
 }
 
 async function joinSession(name) {
-  const res = await fetch('http://127.0.0.1:8000/session/join', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      code: SESSION_CODE,
-      name
+  try {
+    const res = await fetch('http://127.0.0.1:8000/session/join', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        code: SESSION_CODE,
+        name
+      })
     })
-  })
 
-  if (!res.ok) {
-    alert('Erro ao entrar na sessão')
-    return
-  }
+    if (!res.ok) {
+      alert('Não foi possível entrar na sessão')
+      router.push('/')
+      return
+    }
 
-  if (!ws.value) {
-    connect()
+    if (!ws.value) {
+      connect()
+    }
+
+  } catch (err) {
+    alert('Erro ao conectar à sessão')
+    router.push('/')
   }
 }
 
@@ -209,6 +226,79 @@ async function leaveSession() {
       name: username.value
     })
   })
+
+  if (ws.value) {
+    ws.value.close()
+    ws.value = null
+  }
+
+  router.push('/')
+}
+
+async function revealVotes() {
+  if (!isAdmin.value) return
+
+  const res = await fetch('http://127.0.0.1:8000/session/reveal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      code: SESSION_CODE,
+      name: username.value
+    })
+  })
+
+  if (!res.ok) {
+    alert('Não foi possível revelar os votos')
+  }
+}
+
+async function resetVotes() {
+  if (!isAdmin.value) return
+
+  const res = await fetch('http://127.0.0.1:8000/session/reset', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      code: SESSION_CODE,
+      name: username.value
+    })
+  })
+
+  if (!res.ok) {
+    alert('Não foi possível reiniciar a votação')
+  }
+}
+
+async function deleteSession() {
+  if (!isAdmin.value) return
+
+  const confirmed = window.confirm(
+    'Tem certeza que deseja excluir esta sessão?'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  const res = await fetch('http://127.0.0.1:8000/session/delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      code: SESSION_CODE,
+      name: username.value
+    })
+  })
+
+  if (!res.ok) {
+    alert('Não foi possível excluir a sessão')
+    return
+  }
 
   if (ws.value) {
     ws.value.close()
@@ -430,15 +520,5 @@ onUnmounted(() => {
 .leave-label {
   color: white;
   font-size: 14px;
-}
-
-.sidebar {
-  position: absolute;
-  right: 20px;
-  top: 120px;
-  width: 250px;
-  background: #1E1E1E;
-  padding: 20px;
-  border-radius: 12px;
 }
 </style>

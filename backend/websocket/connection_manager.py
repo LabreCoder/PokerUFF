@@ -18,3 +18,9 @@ class ConnectionManager:
     async def broadcast(self, code: str, message: str):
         for connection in self.active_connections.get(code, []):
             await connection.send_text(message)
+
+    async def close_session(self, code: str):
+        connections = self.active_connections.pop(code, [])
+
+        for connection in connections:
+            await connection.close()
