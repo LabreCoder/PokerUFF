@@ -36,6 +36,20 @@ Integrantes do grupo:
 
 ---
 
+## Pré-requisitos
+
+- Python 3.11+
+- Node.js ^20.19.0 ou >=22.12.0
+
+Verifique as versões instaladas:
+
+```bash
+python3 --version
+node -v
+```
+
+---
+
 # 🚀 Como executar o projeto
 
 ## 1. Clonar o repositório
